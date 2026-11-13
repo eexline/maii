@@ -1,0 +1,6 @@
+{
+  "name": "awg-operator-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AWG operator panel (Vercel) — proxies /api to bot server"
+}
