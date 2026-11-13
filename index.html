@@ -394,8 +394,12 @@
   <div id="app" class="hidden">
     <aside>
       <div class="bar">
-        <h2>Очередь <span class="count" id="qCount"></span></h2>
+        <h2><span id="listTitle">Чаты</span> <span class="count" id="qCount"></span></h2>
         <button type="button" class="btn ghost" id="logoutBtn">Выйти</button>
+      </div>
+      <div class="tabs" id="tabs" style="display:flex;gap:0;border-bottom:1px solid var(--line);flex-shrink:0">
+        <button type="button" class="tab active" data-tab="inbox" style="flex:1;border:0;background:transparent;padding:10px;font:inherit;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--ink)">Все</button>
+        <button type="button" class="tab" data-tab="queue" style="flex:1;border:0;background:transparent;padding:10px;font:inherit;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)">Очередь</button>
       </div>
       <div class="search-wrap">
         <input type="search" id="searchQ" placeholder="Поиск: @user, id, имя" enterkeyhint="search" />
@@ -434,6 +438,7 @@
       lastMsgId: 0,
       pollTimer: null,
       searchTimer: null,
+      tab: localStorage.getItem("op_tab") || "inbox",
     };
 
     const $ = (id) => document.getElementById(id);
@@ -484,8 +489,22 @@
         ask_human: "просил оператора",
         tech_stuck: "техтупик",
         complaint: "жалоба",
+        false_claim: "фейк готово",
         manual: "вручную",
       })[r] || (r || "—");
+    }
+
+    function setTab(tab) {
+      state.tab = tab === "queue" ? "queue" : "inbox";
+      localStorage.setItem("op_tab", state.tab);
+      document.querySelectorAll("#tabs .tab").forEach((btn) => {
+        const on = btn.dataset.tab === state.tab;
+        btn.classList.toggle("active", on);
+        btn.style.fontWeight = on ? "600" : "500";
+        btn.style.color = on ? "var(--ink)" : "var(--muted)";
+        btn.style.borderBottomColor = on ? "var(--accent)" : "transparent";
+      });
+      $("listTitle").textContent = state.tab === "queue" ? "Очередь" : "Чаты";
     }
 
     function escapeHtml(s) {
@@ -511,19 +530,26 @@
       $("qCount").textContent = items.length ? String(items.length) : "";
       const box = $("queueList");
       if (!items.length) {
-        box.innerHTML = '<div class="list-empty">Очередь пуста</div>';
+        box.innerHTML = '<div class="list-empty">' + (state.tab === "queue" ? "Очередь пуста" : "Пока нет диалогов") + "</div>";
         return;
       }
       box.innerHTML = items.map((l) => {
         const name = (l.first_name || "Лид") + (l.username ? " @" + l.username : "");
         const st = l.human_status === "taken" ? "taken" : "queued";
         const active = l.id === state.activeId ? " active" : "";
+        const inHandoff = l.human_status === "queued" || l.human_status === "taken";
+        const statusTxt = inHandoff ? st : (l.stage_label || "bot");
+        const statusCls = inHandoff ? ("is-" + st) : "";
+        const metaBits = [
+          l.stage_label || null,
+          inHandoff ? reasonLabel(l.handoff_reason) : null,
+        ].filter(Boolean);
         return `<button type="button" class="item${active}" data-id="${l.id}">
           <div class="row">
             <span class="name">${escapeHtml(name)}</span>
-            <span class="status is-${st}">${st}</span>
+            <span class="status ${statusCls}">${escapeHtml(statusTxt)}</span>
           </div>
-          <div class="meta">${escapeHtml(reasonLabel(l.handoff_reason))} · ${escapeHtml(l.stage_label || "—")}</div>
+          <div class="meta">${escapeHtml(metaBits.join(" · ") || "—")}</div>
           <div class="preview">${escapeHtml(l.last_user_text || "")}</div>
         </button>`;
       }).join("");
@@ -533,7 +559,8 @@
     }
 
     async function refreshQueue() {
-      const data = await api("/api/queue");
+      const path = state.tab === "queue" ? "/api/queue" : "/api/inbox";
+      const data = await api(path);
       renderQueue(data.items || []);
     }
 
@@ -625,12 +652,21 @@
         state.token = data.token;
         localStorage.setItem("op_token", state.token);
         showApp(true);
+        setTab(state.tab);
         await refreshQueue();
         startPolling();
       } catch (err) {
         $("loginErr").textContent = err.message || "Ошибка входа";
       }
     };
+
+    document.querySelectorAll("#tabs .tab").forEach((btn) => {
+      btn.onclick = async () => {
+        setTab(btn.dataset.tab);
+        $("searchQ").value = "";
+        await refreshQueue();
+      };
+    });
 
     $("logoutBtn").onclick = () => logout(false);
     $("backBtn").onclick = () => closeChat();
@@ -676,6 +712,7 @@
       try {
         await api("/api/queue");
         showApp(true);
+        setTab(state.tab);
         await refreshQueue();
         startPolling();
       } catch (_) {
