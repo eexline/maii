@@ -378,9 +378,10 @@
       <h1>Operator</h1>
       <p class="hint">Очередь лидов и ответы в Telegram.</p>
       <form id="loginForm">
+        <input type="text" name="username" autocomplete="username" value="operator" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
         <div class="field">
           <label for="password">Пароль</label>
-          <input type="password" id="password" autocomplete="current-password" required />
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
         </div>
         <div style="margin-top:14px">
           <button class="btn block" type="submit">Войти</button>

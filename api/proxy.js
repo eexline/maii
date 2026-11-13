@@ -1,48 +1,44 @@
 /**
- * Vercel → bot operator API proxy.
- * Set OPERATOR_BACKEND_URL=http://HOST:8080 (no trailing slash)
+ * Vercel proxy → operator API on the bot server.
+ * Env: OPERATOR_BACKEND_URL=http://2.27.120.71:8643
  */
 
-function getBackend() {
+function backend() {
   const raw = (process.env.OPERATOR_BACKEND_URL || "").trim().replace(/\/+$/, "");
-  if (!raw) throw new Error("OPERATOR_BACKEND_URL is not set in Vercel env");
+  if (!raw) throw new Error("OPERATOR_BACKEND_URL is not set");
   return raw;
-}
-
-function joinPath(parts) {
-  if (Array.isArray(parts)) return parts.map(encodeURIComponent).join("/");
-  if (parts == null || parts === "") return "";
-  return String(parts)
-    .split("/")
-    .filter(Boolean)
-    .map(encodeURIComponent)
-    .join("/");
-}
-
-function forwardQuery(urlPath) {
-  try {
-    const u = new URL(urlPath, "http://local");
-    u.searchParams.delete("path");
-    const s = u.searchParams.toString();
-    return s ? `?${s}` : "";
-  } catch {
-    return "";
-  }
 }
 
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
-  let backend;
+  let base;
   try {
-    backend = getBackend();
+    base = backend();
   } catch (err) {
     res.status(500).json({ detail: err.message });
     return;
   }
 
-  const pathStr = joinPath(req.query.path);
-  const target = `${backend}/api/${pathStr}${forwardQuery(req.url || "")}`;
+  // /api/proxy?path=login  OR  /api/proxy?path=leads/1/messages&after_id=0
+  const pathParam = req.query.path;
+  const pathStr = Array.isArray(pathParam)
+    ? pathParam.filter(Boolean).join("/")
+    : String(pathParam || "").replace(/^\/+/, "");
+
+  if (!pathStr) {
+    res.status(400).json({ detail: "Missing path" });
+    return;
+  }
+
+  const forward = new URLSearchParams();
+  for (const [k, v] of Object.entries(req.query || {})) {
+    if (k === "path") continue;
+    if (Array.isArray(v)) v.forEach((x) => forward.append(k, String(x)));
+    else if (v != null) forward.append(k, String(v));
+  }
+  const qs = forward.toString();
+  const target = `${base}/api/${pathStr}${qs ? `?${qs}` : ""}`;
 
   const headers = { accept: "application/json" };
   if (req.headers.authorization) headers.authorization = req.headers.authorization;
