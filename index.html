@@ -430,6 +430,7 @@
     </main>
   </div>
 
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const state = {
       token: localStorage.getItem("op_token") || "",
@@ -451,15 +452,23 @@
       $("app").classList.toggle("chat-open", !!open);
     }
 
+    function tgWebApp() {
+      try { return window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null; }
+      catch (_) { return null; }
+    }
+
     async function api(path, opts = {}) {
       const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
       if (state.token) headers.Authorization = "Bearer " + state.token;
       const res = await fetch(path, { ...opts, headers });
-      if (res.status === 401) {
-        logout(true);
-        throw new Error("Сессия истекла");
-      }
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        const detail = typeof data.detail === "string" ? data.detail : "";
+        // login endpoints — не считаем это «сессией»
+        const isLogin = String(path || "").indexOf("/api/login") === 0;
+        if (!isLogin) logout(true);
+        throw new Error(detail || "Сессия истекла");
+      }
       if (!res.ok) {
         const detail = data.detail;
         const msg = typeof detail === "string" ? detail : (data.message || ("HTTP " + res.status));
@@ -715,22 +724,44 @@
       startPolling();
     }
 
-    async function tryAuthFromQuery() {
+    async function loginWithTelegramPayload(payload) {
+      // сбросить протухший Bearer до логина
+      state.token = "";
+      localStorage.removeItem("op_token");
+      const data = await api("/api/login/telegram", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      state.token = data.token;
+      localStorage.setItem("op_token", state.token);
+      await enterApp();
+      return true;
+    }
+
+    async function tryAuthFromTelegram() {
+      const tw = tgWebApp();
+      if (tw) {
+        try {
+          tw.ready();
+          tw.expand();
+        } catch (_) {}
+      }
+      const initData = tw && tw.initData ? String(tw.initData) : "";
+      if (initData) {
+        try {
+          return await loginWithTelegramPayload({ init_data: initData });
+        } catch (err) {
+          $("loginErr").textContent = err.message || "WebApp вход не удался";
+        }
+      }
       const params = new URLSearchParams(window.location.search || "");
       const auth = params.get("auth");
       if (!auth) return false;
       try {
-        const data = await api("/api/login/telegram", {
-          method: "POST",
-          body: JSON.stringify({ auth }),
-        });
-        state.token = data.token;
-        localStorage.setItem("op_token", state.token);
-        // убрать auth из URL, чтобы не светить токен
+        const ok = await loginWithTelegramPayload({ auth });
         const clean = window.location.pathname + (window.location.hash || "");
         window.history.replaceState({}, "", clean);
-        await enterApp();
-        return true;
+        return ok;
       } catch (err) {
         $("loginErr").textContent = err.message || "Ссылка недействительна";
         return false;
@@ -738,7 +769,7 @@
     }
 
     (async () => {
-      if (await tryAuthFromQuery()) return;
+      if (await tryAuthFromTelegram()) return;
       if (!state.token) return;
       try {
         await api(state.tab === "queue" ? "/api/queue" : "/api/inbox");
