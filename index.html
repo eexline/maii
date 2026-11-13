@@ -708,14 +708,41 @@
       if (!isMobile()) setChatOpen(!!state.activeId);
     });
 
+    async function enterApp() {
+      showApp(true);
+      setTab(state.tab);
+      await refreshQueue();
+      startPolling();
+    }
+
+    async function tryAuthFromQuery() {
+      const params = new URLSearchParams(window.location.search || "");
+      const auth = params.get("auth");
+      if (!auth) return false;
+      try {
+        const data = await api("/api/login/telegram", {
+          method: "POST",
+          body: JSON.stringify({ auth }),
+        });
+        state.token = data.token;
+        localStorage.setItem("op_token", state.token);
+        // убрать auth из URL, чтобы не светить токен
+        const clean = window.location.pathname + (window.location.hash || "");
+        window.history.replaceState({}, "", clean);
+        await enterApp();
+        return true;
+      } catch (err) {
+        $("loginErr").textContent = err.message || "Ссылка недействительна";
+        return false;
+      }
+    }
+
     (async () => {
+      if (await tryAuthFromQuery()) return;
       if (!state.token) return;
       try {
-        await api("/api/queue");
-        showApp(true);
-        setTab(state.tab);
-        await refreshQueue();
-        startPolling();
+        await api(state.tab === "queue" ? "/api/queue" : "/api/inbox");
+        await enterApp();
       } catch (_) {
         logout(true);
       }
