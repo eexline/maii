@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
   const qs = forward.toString();
   const target = `${base}/api/${pathStr}${qs ? `?${qs}` : ""}`;
 
-  const headers = { accept: "application/json" };
+  const headers = { accept: "*/*" };
   if (req.headers.authorization) headers.authorization = req.headers.authorization;
   if (req.headers["content-type"]) headers["content-type"] = req.headers["content-type"];
 
@@ -59,9 +59,20 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const text = await upstream.text();
   const ct = upstream.headers.get("content-type") || "application/json; charset=utf-8";
-  res.status(upstream.status).setHeader("content-type", ct).send(text);
+  const cache = upstream.headers.get("cache-control");
+  if (cache) res.setHeader("Cache-Control", cache);
+  res.status(upstream.status).setHeader("content-type", ct);
+
+  // Binary (avatars) — don't force UTF-8 text
+  if (/^image\//i.test(ct) || /octet-stream/i.test(ct)) {
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+    return;
+  }
+
+  const text = await upstream.text();
+  res.send(text);
 };
 
 module.exports.config = {

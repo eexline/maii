@@ -3,25 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#e8eaed" />
+  <meta name="theme-color" content="#c9d6e2" />
   <title>AWG Operator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #e8eaed;
-      --panel: #f7f8fa;
+      --bg: #d5dee8;
+      --panel: rgba(247, 249, 252, 0.88);
       --ink: #14171c;
       --muted: #5c6570;
-      --line: #d5d9e0;
-      --line-strong: #b8bfc9;
-      --accent: #1f4b7a;
-      --accent-soft: #d9e4f0;
+      --line: #cfd6df;
+      --line-strong: #aeb8c4;
+      --accent: #1a5f6e;
+      --accent-2: #1f4b7a;
+      --accent-soft: #d4e8ec;
       --danger: #9b1c1c;
       --lead-bg: #ffffff;
       --bot-bg: #eef1f5;
-      --op-bg: #e4edf6;
+      --op-bg: #dceef1;
       --font: "IBM Plex Sans", sans-serif;
       --mono: "IBM Plex Mono", ui-monospace, monospace;
       --safe-b: env(safe-area-inset-bottom, 0px);
@@ -35,7 +36,10 @@
       font-family: var(--font);
       color: var(--ink);
       background:
-        linear-gradient(180deg, #dfe3e8 0%, var(--bg) 28%, #e4e7eb 100%);
+        radial-gradient(900px 480px at 8% -10%, rgba(56, 140, 150, 0.28), transparent 55%),
+        radial-gradient(800px 520px at 100% 0%, rgba(40, 80, 130, 0.22), transparent 50%),
+        linear-gradient(165deg, #c5d4e2 0%, #d8e2eb 42%, #cfd9e4 100%);
+      background-attachment: fixed;
       -webkit-font-smoothing: antialiased;
     }
     button, input, textarea { font: inherit; color: inherit; }
@@ -131,9 +135,12 @@
       display: flex;
       flex-direction: column;
       background: var(--panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
     aside {
       border-right: 1px solid var(--line);
+      box-shadow: 4px 0 24px rgba(20, 40, 60, 0.04);
     }
 
     .bar {
@@ -173,14 +180,37 @@
       text-align: left;
       border: 0;
       background: transparent;
-      padding: 14px;
+      padding: 12px 14px;
       border-bottom: 1px solid var(--line);
       cursor: pointer;
       display: grid;
-      gap: 4px;
+      grid-template-columns: 44px 1fr;
+      gap: 4px 10px;
+      align-items: start;
     }
-    .item:hover { background: #eef0f3; }
+    .item:hover { background: rgba(255,255,255,0.55); }
     .item.active { background: var(--accent-soft); }
+    .item .avatar {
+      grid-row: 1 / span 3;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #f4fafb;
+      letter-spacing: -0.02em;
+      background: linear-gradient(145deg, #2a7a86, #1f4b7a);
+    }
+    .item .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .item .row {
       display: flex;
       align-items: baseline;
@@ -288,18 +318,19 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      background: #eef0f3;
+      background:
+        linear-gradient(180deg, rgba(220, 232, 238, 0.65), rgba(232, 236, 240, 0.9));
       -webkit-overflow-scrolling: touch;
     }
     .bubble {
       max-width: min(560px, 88%);
       padding: 10px 12px;
-      border-radius: 10px;
-      white-space: pre-wrap;
+      border-radius: 12px;
       word-break: break-word;
       line-height: 1.45;
       font-size: 0.94rem;
       border: 1px solid transparent;
+      box-shadow: 0 1px 2px rgba(20, 40, 60, 0.04);
     }
     .bubble.user {
       align-self: flex-start;
@@ -314,7 +345,7 @@
     .bubble.operator {
       align-self: flex-end;
       background: var(--op-bg);
-      border-color: #c5d4e6;
+      border-color: #b7d4da;
     }
     .bubble .who {
       font-family: var(--mono);
@@ -324,17 +355,91 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+    .bubble-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble-body b, .bubble-body strong { font-weight: 600; }
+    .bubble-body i, .bubble-body em { font-style: italic; }
+    .bubble-body u, .bubble-body ins { text-decoration: underline; }
+    .bubble-body s, .bubble-body strike, .bubble-body del { text-decoration: line-through; }
+    .bubble-body code, .bubble-body pre {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: rgba(20, 40, 60, 0.07);
+      border-radius: 4px;
+      padding: 0.05em 0.35em;
+    }
+    .bubble-body pre {
+      display: block;
+      padding: 8px 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin: 4px 0 0;
+    }
+    .bubble-body a {
+      color: var(--accent-2);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .chat-head .top-row .head-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #f4fafb;
+      background: linear-gradient(145deg, #2a7a86, #1f4b7a);
+    }
+    .chat-head .top-row .head-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
 
     .composer {
       border-top: 1px solid var(--line);
-      padding: 10px 14px;
+      padding: 8px 14px 10px;
       padding-bottom: calc(10px + var(--safe-b));
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(247,249,252,0.95), rgba(236,242,246,0.98));
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
+      gap: 8px 10px;
       align-items: end;
       flex-shrink: 0;
+    }
+    .fmt-bar {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .fmt-bar button {
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      border-radius: 6px;
+      min-width: 36px;
+      height: 32px;
+      padding: 0 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+    .fmt-bar button:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .fmt-bar button:active { transform: translateY(1px); }
+    .fmt-bar .hint {
+      margin-left: 6px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
     }
     .composer textarea {
       min-height: 52px;
@@ -361,6 +466,7 @@
         grid-template-columns: 1fr;
       }
       .composer .btn { width: 100%; }
+      .fmt-bar .hint { display: none; }
       .chat-actions { width: 100%; }
       .chat-actions .btn { flex: 1; }
     }
@@ -413,6 +519,7 @@
         <div class="chat-head">
           <div class="top-row">
             <button type="button" class="btn ghost back-btn" id="backBtn" aria-label="Назад">←</button>
+            <div class="head-avatar" id="chatAvatar" aria-hidden="true">?</div>
             <div class="title" id="chatTitle">—</div>
           </div>
           <div class="chat-actions">
@@ -423,7 +530,16 @@
         </div>
         <div class="msgs" id="msgs"></div>
         <div class="composer">
-          <textarea id="replyText" placeholder="Ответ лиду" rows="2"></textarea>
+          <div class="fmt-bar" id="fmtBar" title="Выдели текст и нажми кнопку">
+            <button type="button" data-fmt="b" title="Жирный (Ctrl+B)"><b>B</b></button>
+            <button type="button" data-fmt="i" title="Курсив (Ctrl+I)"><i>I</i></button>
+            <button type="button" data-fmt="u" title="Подчёркнутый (Ctrl+U)"><u>U</u></button>
+            <button type="button" data-fmt="s" title="Зачёркнутый"><s>S</s></button>
+            <button type="button" data-fmt="code" title="Код" style="font-family:var(--mono)">&lt;/&gt;</button>
+            <button type="button" data-fmt="link" title="Ссылка">URL</button>
+            <span class="hint">выдели → формат · HTML как в Telegram</span>
+          </div>
+          <textarea id="replyText" placeholder="Ответ лиду — можно выделить и сделать жирным" rows="2"></textarea>
           <button type="button" class="btn" id="sendBtn">Отправить</button>
         </div>
       </div>
@@ -525,6 +641,111 @@
         .replace(/"/g, "&quot;");
     }
 
+    function initialsOf(lead) {
+      const name = String((lead && lead.first_name) || "Л").trim();
+      const parts = name.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return (parts[0] || "Л").slice(0, 2).toUpperCase();
+    }
+
+    function avatarGradient(seed) {
+      const s = String(seed || "x");
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      const hues = [168, 192, 210, 150, 185, 200];
+      const a = hues[h % hues.length];
+      const b = hues[(h >> 3) % hues.length];
+      return `linear-gradient(145deg, hsl(${a} 42% 38%), hsl(${b} 48% 28%))`;
+    }
+
+    function avatarUrl(leadId) {
+      return "/api/leads/" + leadId + "/avatar?t=" + encodeURIComponent(state.token || "");
+    }
+
+    function fillAvatar(el, lead) {
+      if (!el || !lead) return;
+      const initials = initialsOf(lead);
+      el.style.background = avatarGradient(lead.telegram_id || lead.id || initials);
+      el.textContent = initials;
+      el.querySelectorAll("img").forEach((n) => n.remove());
+      if (!lead.id || !state.token) return;
+      const img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.src = avatarUrl(lead.id);
+      img.onload = () => { el.textContent = ""; el.appendChild(img); };
+      img.onerror = () => { img.remove(); };
+    }
+
+    function sanitizeTgHtml(raw) {
+      const input = String(raw || "");
+      if (!/<\/?(?:b|strong|i|em|u|ins|s|strike|del|code|pre|a)\b/i.test(input)) {
+        return escapeHtml(input)
+          .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+          .replace(/\*([^*\n]+)\*/g, "<i>$1</i>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>");
+      }
+      const allowed = new Set(["B", "STRONG", "I", "EM", "U", "INS", "S", "STRIKE", "DEL", "CODE", "PRE", "A", "BR"]);
+      const doc = new DOMParser().parseFromString("<div>" + input + "</div>", "text/html");
+      const root = doc.body.firstElementChild || doc.body;
+      const walk = (el) => {
+        [...el.children].forEach((child) => {
+          const tag = child.tagName;
+          if (!allowed.has(tag)) {
+            const frag = document.createDocumentFragment();
+            while (child.firstChild) frag.appendChild(child.firstChild);
+            child.replaceWith(frag);
+            return;
+          }
+          [...child.attributes].forEach((attr) => {
+            if (tag === "A" && attr.name.toLowerCase() === "href") {
+              const href = String(attr.value || "");
+              if (!/^(https?:|tg:)/i.test(href)) child.removeAttribute(attr.name);
+            } else {
+              child.removeAttribute(attr.name);
+            }
+          });
+          walk(child);
+        });
+      };
+      walk(root);
+      return root.innerHTML;
+    }
+
+    function wrapSelection(before, after, placeholder) {
+      const ta = $("replyText");
+      if (!ta) return;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const val = ta.value;
+      const selected = val.slice(start, end);
+      const body = selected || (placeholder || "text");
+      const next = val.slice(0, start) + before + body + after + val.slice(end);
+      ta.value = next;
+      ta.focus();
+      const innerStart = start + before.length;
+      ta.setSelectionRange(innerStart, innerStart + body.length);
+      autosize();
+    }
+
+    function applyFormat(kind) {
+      if (kind === "b") return wrapSelection("<b>", "</b>", "жирный");
+      if (kind === "i") return wrapSelection("<i>", "</i>", "курсив");
+      if (kind === "u") return wrapSelection("<u>", "</u>", "текст");
+      if (kind === "s") return wrapSelection("<s>", "</s>", "текст");
+      if (kind === "code") return wrapSelection("<code>", "</code>", "code");
+      if (kind === "link") {
+        const url = prompt("Ссылка (https://…)", "https://");
+        if (!url) return;
+        const safe = String(url).trim();
+        if (!/^(https?:|tg:)/i.test(safe)) {
+          alert("Нужна ссылка http(s) или tg://");
+          return;
+        }
+        return wrapSelection('<a href="' + safe.replace(/"/g, "") + '">', "</a>", "ссылка");
+      }
+    }
+
     function startPolling() {
       if (state.pollTimer) clearInterval(state.pollTimer);
       state.pollTimer = setInterval(async () => {
@@ -554,17 +775,26 @@
           l.stage_label || null,
           inHandoff ? reasonLabel(l.handoff_reason) : null,
         ].filter(Boolean);
+        const preview = String(l.last_user_text || "").replace(/<[^>]+>/g, "");
         return `<button type="button" class="item${active}" data-id="${l.id}">
+          <div class="avatar" data-av="${l.id}">${escapeHtml(initialsOf(l))}</div>
           <div class="row">
             <span class="name">${escapeHtml(name)}</span>
             <span class="status ${statusCls}">${escapeHtml(statusTxt)}</span>
           </div>
           <div class="meta">${escapeHtml(metaBits.join(" · ") || "—")}</div>
-          <div class="preview">${escapeHtml(l.last_user_text || "")}</div>
+          <div class="preview">${escapeHtml(preview)}</div>
         </button>`;
       }).join("");
       box.querySelectorAll(".item").forEach((el) => {
         el.onclick = () => openLead(Number(el.dataset.id));
+      });
+      items.forEach((l) => {
+        const av = box.querySelector('.avatar[data-av="' + l.id + '"]');
+        if (av) {
+          av.style.background = avatarGradient(l.telegram_id || l.id);
+          fillAvatar(av, l);
+        }
       });
     }
 
@@ -596,6 +826,7 @@
       const lead = await api("/api/leads/" + id);
       const name = (lead.first_name || "Лид") + (lead.username ? " @" + lead.username : "");
       $("chatTitle").textContent = name;
+      fillAvatar($("chatAvatar"), lead);
       const bits = [
         "tg " + lead.telegram_id,
         lead.stage_label || null,
@@ -619,7 +850,7 @@
         const who = m.role === "user" ? "лид" : (src === "operator" ? "оператор" : (src === "handoff" ? "система" : "бот"));
         const el = document.createElement("div");
         el.className = "bubble " + cls;
-        el.innerHTML = `<div class="who">${who}</div>${escapeHtml(m.content)}`;
+        el.innerHTML = `<div class="who">${who}</div><div class="bubble-body">${sanitizeTgHtml(m.content)}</div>`;
         box.appendChild(el);
       });
       if (scrollEnd || nearBottom) box.scrollTop = box.scrollHeight;
@@ -681,8 +912,17 @@
     $("logoutBtn").onclick = () => logout(false);
     $("backBtn").onclick = () => closeChat();
     $("sendBtn").onclick = sendReply;
+    $("fmtBar").querySelectorAll("button[data-fmt]").forEach((btn) => {
+      btn.onclick = () => applyFormat(btn.dataset.fmt);
+    });
     $("replyText").addEventListener("input", autosize);
     $("replyText").addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === "b") { e.preventDefault(); applyFormat("b"); return; }
+        if (k === "i") { e.preventDefault(); applyFormat("i"); return; }
+        if (k === "u") { e.preventDefault(); applyFormat("u"); return; }
+      }
       if (e.key === "Enter" && !e.shiftKey && !isMobile()) {
         e.preventDefault();
         sendReply();
