@@ -910,6 +910,13 @@
       renderQueue(state.leads);
     }
 
+    function updateActionButtons(lead) {
+      const hs = String((lead && lead.human_status) || "bot").toLowerCase();
+      const taken = hs === "taken";
+      $("takeBtn").classList.toggle("hidden", taken);
+      $("releaseBtn").classList.toggle("hidden", !taken);
+    }
+
     async function openLead(id) {
       state.activeId = id;
       resetMessageState();
@@ -924,6 +931,7 @@
       const name = (lead.first_name || "Лид") + (lead.username ? " @" + lead.username : "");
       $("chatTitle").textContent = name;
       fillAvatar($("chatAvatar"), lead);
+      updateActionButtons(lead);
       const chips = [];
       if (lead.telegram_id != null) {
         chips.push(`<span class="chip"><span class="k">tg</span>${escapeHtml(String(lead.telegram_id))}</span>`);
