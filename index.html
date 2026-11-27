@@ -446,6 +446,13 @@
       background: var(--lead-bg);
     }
     .bubble.user { align-self: flex-start; }
+    .bubble.user.cmd .bubble-body,
+    .bubble.user.btn-tap .bubble-body {
+      font-family: var(--mono);
+      font-size: 0.86rem;
+    }
+    .bubble.user.cmd { border-color: #c4b89a; background: #f7f1e4; }
+    .bubble.user.btn-tap { border-color: #b7c4d4; background: #eef2f7; }
     .bubble.assistant {
       align-self: flex-end;
       background: var(--bot-bg);
@@ -960,8 +967,18 @@
       state.lastMsgId = Math.max(state.lastMsgId, m.id);
 
       const src = (m.meta && m.meta.source) || "";
-      const cls = m.role === "user" ? "user" : (src === "operator" ? "operator" : "assistant");
-      const who = m.role === "user" ? "лид" : (src === "operator" ? "оператор" : (src === "handoff" ? "система" : "бот"));
+      let cls = m.role === "user" ? "user" : (src === "operator" ? "operator" : "assistant");
+      let who = m.role === "user" ? "лид" : (src === "operator" ? "оператор" : (src === "handoff" ? "система" : "бот"));
+      if (m.role === "user" && src === "command") {
+        cls += " cmd";
+        who = "команда";
+      } else if (m.role === "user" && src === "button") {
+        cls += " btn-tap";
+        who = "кнопка";
+      } else if (m.role === "user" && /^\/\w/.test(String(m.content || "").trim())) {
+        cls += " cmd";
+        who = "команда";
+      }
       const el = document.createElement("div");
       el.className = "bubble " + cls;
       el.dataset.msgId = String(m.id);
