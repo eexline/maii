@@ -453,6 +453,45 @@
     }
     .bubble.user.cmd { border-color: #c4b89a; background: #f7f1e4; }
     .bubble.user.btn-tap { border-color: #b7c4d4; background: #eef2f7; }
+    .bubble-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 11px 10px;
+    }
+    .bubble-btns .tg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.2;
+      background: #fff;
+      color: var(--ink);
+      pointer-events: none;
+    }
+    .bubble-btns .tg-btn.url {
+      border-color: #9bb8d4;
+      background: #eaf2fa;
+      color: #1f4b7a;
+    }
+    .bubble-btns .tg-btn.cb {
+      border-color: #9bc4b0;
+      background: #e8f3ed;
+      color: #0e5c4a;
+    }
+    .bubble-btns .tg-btn .kind {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+    }
     .bubble.assistant {
       align-self: flex-end;
       background: var(--bot-bg);
@@ -982,11 +1021,30 @@
       const el = document.createElement("div");
       el.className = "bubble " + cls;
       el.dataset.msgId = String(m.id);
+      const btnsHtml = renderMessageButtons(m);
       el.innerHTML =
         `<div class="who"><span>${who}</span><span class="when">${escapeHtml(formatTime(m.created_at))}</span></div>` +
-        `<div class="bubble-body">${sanitizeTgHtml(m.content)}</div>`;
+        `<div class="bubble-body">${sanitizeTgHtml(m.content)}</div>` +
+        btnsHtml;
       $("msgs").appendChild(el);
       return true;
+    }
+
+    function renderMessageButtons(m) {
+      const raw = (m && m.meta && m.meta.buttons) || [];
+      if (!Array.isArray(raw) || !raw.length) return "";
+      const chips = raw.map((b) => {
+        if (!b || typeof b !== "object") return "";
+        const label = String(b.text || b.label || "button").trim() || "button";
+        const url = String(b.url || "").trim();
+        const next = String(b.next_node || "").trim();
+        const isUrl = !!url;
+        const kind = isUrl ? "url" : "cb";
+        const hint = isUrl ? "link" : (next ? "tap→" + next : "tap");
+        return `<span class="tg-btn ${kind}" title="${escapeHtml(isUrl ? url : (next || "callback"))}"><span class="kind">${escapeHtml(hint)}</span>${escapeHtml(label)}</span>`;
+      }).filter(Boolean);
+      if (!chips.length) return "";
+      return `<div class="bubble-btns">${chips.join("")}</div>`;
     }
 
     async function loadMessages(scrollEnd) {
